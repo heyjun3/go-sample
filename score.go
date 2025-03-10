@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"strconv"
 	"strings"
 	"sync"
-	// "sync"
 )
 
 type User struct {
@@ -26,11 +26,11 @@ func NewUser(id string, a, b, c, d, e int) (*User, error) {
 }
 
 type Score struct {
-	a uint8
-	b uint8
-	c uint8
-	d uint8
-	e uint8
+	a int8
+	b int8
+	c int8
+	d int8
+	e int8
 }
 
 func NewScore(a, b, c, d, e int) (*Score, error) {
@@ -41,46 +41,64 @@ func NewScore(a, b, c, d, e int) (*Score, error) {
 		return nil, fmt.Errorf("invalid score range. value: %v", v)
 	}
 	return &Score{
-		a: uint8(a),
-		b: uint8(b),
-		c: uint8(c),
-		d: uint8(d),
-		e: uint8(e),
+		a: int8(a),
+		b: int8(b),
+		c: int8(c),
+		d: int8(d),
+		e: int8(e),
 	}, nil
 }
 
 type Rule interface {
-	Fn(*Score, *Score) uint8
-	Boundary() uint8
+	Fn(*Score, *Score) int8
 }
 
 type DisengageAdult struct{}
 
-func (d DisengageAdult) Fn(first, second *Score) uint8 {
-	if math.Abs(float64(first.c)-float64(second.c)) < 16 {
+func (d DisengageAdult) Fn(first, second *Score) int8 {
+	diff := first.c - second.c
+	if -16 < diff && diff < 16 {
 		return 2
 	}
 	return 0
 }
-func (d DisengageAdult) Boundary() uint8 {
-	return 2
+
+type DisengageAdultV2 struct {
+	m map[string]int8
+}
+
+func NewDisengageAdultV2() *DisengageAdultV2 {
+	m := make(map[string]int8)
+	for i := range 20 {
+		for j := range 20 {
+			key := strconv.Itoa(i) + strconv.Itoa(j)
+			if math.Abs(float64(i-j)) < 16 {
+				m[key] = 2
+			} else {
+				m[key] = 0
+			}
+		}
+	}
+	return &DisengageAdultV2{
+		m: m,
+	}
+}
+func (d *DisengageAdultV2) Fn(first, second *Score) int8 {
+	return d.m[strconv.Itoa(int(first.c))+strconv.Itoa(int(second.c))]
 }
 
 type IsCritical struct{}
 
-func (i IsCritical) Fn(first, second *Score) uint8 {
+func (i IsCritical) Fn(first, second *Score) int8 {
 	if first.a >= 5 && second.a >= 5 {
 		return 0
 	}
 	return 1
 }
-func (i IsCritical) Boundary() uint8 {
-	return 1
-}
 
 type IsFree struct{}
 
-func (i IsFree) Fn(first, second *Score) uint8 {
+func (i IsFree) Fn(first, second *Score) int8 {
 	if math.Abs(float64(first.d)-float64(first.e)) < 2 {
 		return 4
 	}
@@ -95,15 +113,12 @@ func (i IsFree) Fn(first, second *Score) uint8 {
 	}
 	return 0
 }
-func (i IsFree) Boundary() uint8 {
-	return 4
-}
 
 type IsAdaptive struct{}
 
-func (i IsAdaptive) Fn(first, second *Score) uint8 {
-	max := uint8(0)
-	for _, v := range []uint8{first.a, first.b, first.c, first.d, first.e} {
+func (i IsAdaptive) Fn(first, second *Score) int8 {
+	max := int8(0)
+	for _, v := range []int8{first.a, first.b, first.c, first.d, first.e} {
 		if max < v {
 			max = v
 		}
@@ -112,9 +127,6 @@ func (i IsAdaptive) Fn(first, second *Score) uint8 {
 		return 1
 	}
 	return 0
-}
-func (i IsAdaptive) Boundary() uint8 {
-	return 1
 }
 
 type CompatibilityCalculator struct {
@@ -127,8 +139,8 @@ func NewCompatibilityCalculator(rules ...Rule) *CompatibilityCalculator {
 	}
 }
 
-func (c *CompatibilityCalculator) calcCompatibility(first, second *Score, max uint8) uint8 {
-	var result uint8 = 0
+func (c *CompatibilityCalculator) calcCompatibility(first, second *Score, max int8) int8 {
+	var result int8 = 0
 	for _, rule := range c.rules {
 		result += rule.Fn(first, second)
 	}
@@ -136,7 +148,7 @@ func (c *CompatibilityCalculator) calcCompatibility(first, second *Score, max ui
 }
 
 func (c *CompatibilityCalculator) MostMatchingCompatibility(managers []*User, member *User) *User {
-	max := uint8(0)
+	max := int8(0)
 	matching := make([]*User, 0)
 	for _, manager := range managers {
 		result := c.calcCompatibility(manager.score, member.score, 0)

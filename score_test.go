@@ -44,7 +44,7 @@ func calculatorFactory(t *testing.T, c int) (
 		members = append(members, member)
 	}
 	calculator := gosample.NewCompatibilityCalculator(
-		gosample.DisengageAdult{},
+		// gosample.DisengageAdult{},
 		gosample.IsCritical{},
 		gosample.IsFree{},
 		gosample.IsAdaptive{},
@@ -60,7 +60,7 @@ func TestCompatibilityCalculator(t *testing.T) {
 }
 
 func TestCompatibilityCalculatorConcurrency(t *testing.T) {
-	calculator, managers, members := calculatorFactory(t, 20000)
+	calculator, managers, members := calculatorFactory(t, 50000)
 	start := time.Now()
 	calculator.ExecMatchingConcurrency(managers, members)
 	fmt.Println("done exec matching concurrency.", time.Since(start).Round(time.Millisecond))
