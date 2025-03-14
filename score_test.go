@@ -44,7 +44,7 @@ func calculatorFactory(t *testing.T, c int) (
 		members = append(members, member)
 	}
 	calculator := gosample.NewCompatibilityCalculator(
-		// gosample.DisengageAdult{},
+		gosample.DisengageAdult{},
 		gosample.IsCritical{},
 		gosample.IsFree{},
 		gosample.IsAdaptive{},
@@ -53,15 +53,46 @@ func calculatorFactory(t *testing.T, c int) (
 }
 
 func TestCompatibilityCalculator(t *testing.T) {
-	calculator, managers, members := calculatorFactory(t, 50000)
+	calculator, managers, members := calculatorFactory(t, 10000)
 	start := time.Now()
 	calculator.ExecMatching(managers, members)
 	fmt.Println("done exec matching.", time.Since(start).Round(time.Millisecond))
 }
 
 func TestCompatibilityCalculatorConcurrency(t *testing.T) {
-	calculator, managers, members := calculatorFactory(t, 50000)
+	calculator, managers, members := calculatorFactory(t, 10000)
 	start := time.Now()
 	calculator.ExecMatchingConcurrency(managers, members)
 	fmt.Println("done exec matching concurrency.", time.Since(start).Round(time.Millisecond))
+}
+
+func userFactory(name string) *gosample.User {
+	user, _ := gosample.NewUser(
+		name,
+		rand.Intn(21),
+		rand.Intn(21),
+		rand.Intn(21),
+		rand.Intn(21),
+		rand.Intn(21),
+	)
+	return user
+}
+
+func BenchmarkDisengageAdult(b *testing.B) {
+	rule := gosample.DisengageAdult{}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		first := userFactory("member" + strconv.Itoa(i))
+		second := userFactory("manager" + strconv.Itoa(i))
+		rule.Fn(first.Score, second.Score)
+	}
+}
+func BenchmarkDisengageAdultV2(b *testing.B) {
+	rule := gosample.NewDisengageAdultV2()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		first := userFactory("member" + strconv.Itoa(i))
+		second := userFactory("manager" + strconv.Itoa(i))
+		rule.Fn(first.Score, second.Score)
+	}
 }

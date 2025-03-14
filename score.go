@@ -11,7 +11,7 @@ import (
 
 type User struct {
 	ID    string
-	score *Score
+	Score *Score
 }
 
 func NewUser(id string, a, b, c, d, e int) (*User, error) {
@@ -21,7 +21,7 @@ func NewUser(id string, a, b, c, d, e int) (*User, error) {
 	}
 	return &User{
 		ID:    id,
-		score: score,
+		Score: score,
 	}, nil
 }
 
@@ -139,7 +139,7 @@ func NewCompatibilityCalculator(rules ...Rule) *CompatibilityCalculator {
 	}
 }
 
-func (c *CompatibilityCalculator) calcCompatibility(first, second *Score, max int8) int8 {
+func (c *CompatibilityCalculator) calcCompatibility(first, second *Score) int8 {
 	var result int8 = 0
 	for _, rule := range c.rules {
 		result += rule.Fn(first, second)
@@ -151,7 +151,7 @@ func (c *CompatibilityCalculator) MostMatchingCompatibility(managers []*User, me
 	max := int8(0)
 	matching := make([]*User, 0)
 	for _, manager := range managers {
-		result := c.calcCompatibility(manager.score, member.score, 0)
+		result := c.calcCompatibility(manager.Score, member.Score)
 		if max < result {
 			max = result
 			matching = []*User{manager}
