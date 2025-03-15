@@ -139,7 +139,7 @@ func NewCompatibilityCalculator(rules ...Rule) *CompatibilityCalculator {
 	}
 }
 
-func (c *CompatibilityCalculator) calcCompatibility(first, second *Score) int8 {
+func (c *CompatibilityCalculator) CalcCompatibility(first, second *Score) int8 {
 	var result int8 = 0
 	for _, rule := range c.rules {
 		result += rule.Fn(first, second)
@@ -151,7 +151,7 @@ func (c *CompatibilityCalculator) MostMatchingCompatibility(managers []*User, me
 	max := int8(0)
 	matching := make([]*User, 0)
 	for _, manager := range managers {
-		result := c.calcCompatibility(manager.Score, member.Score)
+		result := c.CalcCompatibility(manager.Score, member.Score)
 		if max < result {
 			max = result
 			matching = []*User{manager}
@@ -167,12 +167,7 @@ func (c *CompatibilityCalculator) ExecMatching(managers, members []*User) map[st
 	m := make(map[string][]string)
 	for _, member := range members {
 		match := c.MostMatchingCompatibility(managers, member)
-		if v, ok := m[match.ID]; ok {
-			v = append(v, member.ID)
-			m[match.ID] = v
-		} else {
-			m[match.ID] = []string{member.ID}
-		}
+		m[match.ID] = append(m[match.ID], member.ID)
 	}
 	return m
 }

@@ -10,7 +10,19 @@ import (
 	gosample "github.com/heyjun3/go-sample"
 )
 
-func calculatorFactory(t *testing.T, c int) (
+func userFactory(name string) *gosample.User {
+	user, _ := gosample.NewUser(
+		name,
+		rand.Intn(21),
+		rand.Intn(21),
+		rand.Intn(21),
+		rand.Intn(21),
+		rand.Intn(21),
+	)
+	return user
+}
+
+func calculatorFactory(c int) (
 	*gosample.CompatibilityCalculator,
 	[]*gosample.User,
 	[]*gosample.User,
@@ -18,29 +30,9 @@ func calculatorFactory(t *testing.T, c int) (
 	managers := make([]*gosample.User, 0, c)
 	members := make([]*gosample.User, 0, c)
 	for i := range c {
-		manager, err := gosample.NewUser(
-			"manager"+strconv.Itoa(i),
-			rand.Intn(21),
-			rand.Intn(21),
-			rand.Intn(21),
-			rand.Intn(21),
-			rand.Intn(21),
-		)
-		if err != nil {
-			t.Error(err)
-		}
+		manager := userFactory("manager" + strconv.Itoa(i))
 		managers = append(managers, manager)
-		member, err := gosample.NewUser(
-			"member"+strconv.Itoa(i),
-			rand.Intn(21),
-			rand.Intn(21),
-			rand.Intn(21),
-			rand.Intn(21),
-			rand.Intn(21),
-		)
-		if err != nil {
-			t.Error(err)
-		}
+		member := userFactory("member" + strconv.Itoa(i))
 		members = append(members, member)
 	}
 	calculator := gosample.NewCompatibilityCalculator(
@@ -53,29 +45,39 @@ func calculatorFactory(t *testing.T, c int) (
 }
 
 func TestCompatibilityCalculator(t *testing.T) {
-	calculator, managers, members := calculatorFactory(t, 10000)
+	calculator, managers, members := calculatorFactory(10000)
 	start := time.Now()
 	calculator.ExecMatching(managers, members)
 	fmt.Println("done exec matching.", time.Since(start).Round(time.Millisecond))
 }
 
 func TestCompatibilityCalculatorConcurrency(t *testing.T) {
-	calculator, managers, members := calculatorFactory(t, 10000)
+	calculator, managers, members := calculatorFactory(10000)
 	start := time.Now()
 	calculator.ExecMatchingConcurrency(managers, members)
 	fmt.Println("done exec matching concurrency.", time.Since(start).Round(time.Millisecond))
 }
 
-func userFactory(name string) *gosample.User {
-	user, _ := gosample.NewUser(
-		name,
-		rand.Intn(21),
-		rand.Intn(21),
-		rand.Intn(21),
-		rand.Intn(21),
-		rand.Intn(21),
-	)
-	return user
+func BenchmarkCompatibilityCalculator(b *testing.B) {
+	calculator, managers, members := calculatorFactory(b.N)
+	b.ResetTimer()
+	calculator.ExecMatching(managers, members)
+}
+
+func BenchmarkCalcCompatibility(b *testing.B) {
+	calculator, managers, members := calculatorFactory(b.N)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		calculator.CalcCompatibility(managers[i].Score, members[i].Score)
+	}
+}
+
+func BenchmarkMostMatchingCompatibility(b *testing.B) {
+	calculator, managers, members := calculatorFactory(b.N)
+	b.ResetTimer()
+	for _, member := range members {
+		calculator.MostMatchingCompatibility(managers, member)
+	}
 }
 
 func BenchmarkDisengageAdult(b *testing.B) {
