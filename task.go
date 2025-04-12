@@ -1,10 +1,8 @@
 package gosample
 
-import "fmt"
-
-type TaskInterface interface {
-	Task() (ID string, Name string, Status string)
-}
+import (
+	"fmt"
+)
 
 type Task struct {
 	ID     string
@@ -12,42 +10,12 @@ type Task struct {
 	Status string
 }
 
-func (t *Task) Task() (ID string, Name string, Status string) {
-	ID = t.ID
-	Name = t.Name
-	Status = t.Status
-	return
-}
-
-type DoneTask struct {
-	task Task
-}
-func (t *DoneTask) Task() (ID string, Name string, Status string) {
-	ID, Name, Status = t.task.Task()
-	return
-}
-func NewDoneTask(id, name, status string) (*DoneTask, error) {
-	if status != "done" {
-		return nil, fmt.Errorf("failed init task error")
-	}
-	return &DoneTask{
-		task: Task{
-			ID: id,
-			Name: name,
-			Status: status,
-		},
-	}, nil
-}
-
 type UnDoneTask struct {
 	task Task
 }
-
-func (t *UnDoneTask) Task() (ID string, Name string, Status string) {
-	ID, Name, Status = t.task.Task()
-	return
+func (t *UnDoneTask) Task() Task {
+	return t.task
 }
-
 func (t *UnDoneTask) Done() *DoneTask {
 	return &DoneTask{
 		task: Task{
@@ -56,15 +24,53 @@ func (t *UnDoneTask) Done() *DoneTask {
 		},
 	}
 }
+func NewUnDoneTask(id, name, status string) (*UnDoneTask, error) {
+	if status != "undone" {
+		return nil, fmt.Errorf("invalid status: %s", status)
+	}
+	return &UnDoneTask{
+		task: Task{
+			ID:     id,
+			Name:   name,
+			Status: status,
+		},
+	}, nil
+}
+
+type DoneTask struct {
+	task Task
+}
+func (t *DoneTask) Task() Task {
+	return t.task
+}
+func (t *DoneTask) UnDone() *UnDoneTask {
+	return &UnDoneTask{
+		task: Task{
+			ID:   t.task.ID,
+			Name: t.task.Name,
+		},
+	}
+}
+func NewDoneTask(id, name, status string) (*DoneTask, error) {
+	if status != "done" {
+		return nil, fmt.Errorf("invalid status: %s", status)
+	}
+	return &DoneTask{
+		task: Task{
+			ID:     id,
+			Name:   name,
+			Status: status,
+		},
+	}, nil
+}
 
 type TaskRepositoryInterface interface {
-	Save(task TaskInterface) error
+	Save(task Task) error
 }
 
 type TaskRepository struct{}
 
-func (r *TaskRepository) Save(task TaskInterface) error {
-	task.Task()
+func (r *TaskRepository) Save(task Task) error {
 	return nil
 }
 
@@ -76,7 +82,7 @@ func SaveTask() {
 			Name: "task1",
 		},
 	}
-	err := repo.Save(&task)
+	err := repo.Save(task.Task())
 	if err != nil {
 		panic(err)
 	}
