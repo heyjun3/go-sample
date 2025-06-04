@@ -13,6 +13,7 @@ type Task struct {
 type UnDoneTask struct {
 	task Task
 }
+
 func (t *UnDoneTask) Task() Task {
 	return t.task
 }
@@ -40,6 +41,7 @@ func NewUnDoneTask(id, name, status string) (*UnDoneTask, error) {
 type DoneTask struct {
 	task Task
 }
+
 func (t *DoneTask) Task() Task {
 	return t.task
 }
